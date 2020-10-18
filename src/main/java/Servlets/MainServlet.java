@@ -1,13 +1,15 @@
 package Servlets;
 
 
-import contrual.Install;
-import contrual.Open;
-import contrual.Run;
-import contrual.SaveProject;
+import com.google.gson.Gson;
+import contrual.*;
 import pojo.Data;
+import pojo.Message;
 import pojo.Status;
 import utils.RedisOperating;
+
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -54,13 +56,41 @@ public class MainServlet {
                 Method doOpen=cls.getMethod(urls[2], Data.class);
                 status= (Status) doOpen.invoke(open,data);
                 break;
+
+            case "Destory":
+                cls = Class.forName("contrual."+urls[1]);
+                constructor=cls.getConstructor();
+                Destory destory= (Destory) constructor.newInstance();
+                Method doDestory=cls.getMethod(urls[2], Data.class);
+                status= (Status) doDestory.invoke(destory,data);
+                break;
+
+            case "Create":
+                cls = Class.forName("contrual."+urls[1]);
+                constructor=cls.getConstructor();
+                Create create= (Create) constructor.newInstance();
+                Method doCreate=cls.getMethod(urls[2], Data.class);
+                status= (Status) doCreate.invoke(create,data);
+                break;
         }
         return status;
-
+    }
+    public static void exitFile(String path){
+        System.out.println(path+"--+-+-+-+++++++++++++++++++++++++++++++++++");
+        File file=new File(path);
+        if (!file.exists()){
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static void main(String[] args) {
-        RedisOperating operating=new RedisOperating();
-        operating.del("Mac");
+        Message m=new Message();
+        m.setData("xxxx");
+        Gson gson=new Gson();
+        System.out.println(gson.toJson(m));
     }
 }

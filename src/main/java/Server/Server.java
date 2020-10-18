@@ -16,13 +16,16 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 import org.apache.log4j.Logger;
 
 
+import java.util.HashMap;
 import java.util.concurrent.Executors;
 
 /**
  * Created by jingbao on 18-6-23.
  */
-public class Server {
+public class Server {//https://blog.csdn.net/xiangzhihong8/article/details/52029446
     private static Logger log = Logger.getLogger(Server.class);
+    public static HashMap<String,Process> process_map=new
+            HashMap<>();
     public void startinbound(int port) throws Exception {
         EventLoopGroup bossGroup = new EpollEventLoopGroup(0x1, Executors.newCachedThreadPool()); //mainReactor    1个线程
         EventLoopGroup workerGroup = new EpollEventLoopGroup(Runtime.getRuntime().availableProcessors() * 0x3, Executors.newCachedThreadPool());   //subReactor       线程数量等价于cpu个数+1
@@ -30,7 +33,7 @@ public class Server {
             ServerBootstrap b = new ServerBootstrap();
 //            b.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
             b.group(bossGroup, workerGroup).channel(EpollServerSocketChannel.class)
-                    .childHandler(new ChannelInitializer<SocketChannel>() {
+                    .childHandler(  new ChannelInitializer<SocketChannel>() {
                         @Override
                         public void initChannel(SocketChannel ch) throws Exception {
                             // server端发送的是httpResponse，所以要使用HttpResponseEncoder进行编码

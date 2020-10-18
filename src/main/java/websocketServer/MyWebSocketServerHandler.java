@@ -2,10 +2,11 @@ package websocketServer;
 
 import RabbitServer.MessageConsume;
 import RabbitServer.MessageProduct;
-import Server.WorkRunable;
-import Server.WorkThreadPool;
+import WorkerRunables.CreateDockerRunable;
+import WorkerRunables.WorkRunable;
+import WorkerRunables.WorkThreadPool;
 import com.google.gson.Gson;
-import contrual.SaveProject;
+import contrual.Run;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
@@ -15,19 +16,13 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.*;
 import io.netty.util.CharsetUtil;
-import io.netty.util.ReferenceCountUtil;
-import pojo.Context;
 import pojo.Data;
-import pojo.Message;
 import pojo.Status;
+import utils.FileUtils;
 import utils.RedisOperating;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -116,49 +111,33 @@ public class MyWebSocketServerHandler extends
 						.fine(String.format("%s received %s", ctx.channel(),
 								request));
 			}
-			Status status=new Status();
-			status.setStatus("CONNECT OK");
-			TextWebSocketFrame tws = new TextWebSocketFrame(new Gson().toJson(status));
-			ctx.channel().write(tws);
-			ctx.channel().flush();
+//			Status status=new Status();
+//			status.setStatus("CONNECT OK");
+//			TextWebSocketFrame tws = new TextWebSocketFrame(new Gson().toJson(status));
+//			ctx.channel().write(tws);
+//			ctx.channel().flush();
 			Data data=new Gson().fromJson(request, Data.class);
-			MessageConsume messageConsum=new MessageConsume();
-			Global.map.put(data.getMac()+"_channel",ctx);
-			RedisOperating op=new RedisOperating();
-			op.set(Integer.toString(ctx.hashCode()),data.getMac()+"_channel");
-			messageConsum.setMac(data.getMac()+"_channel");
-			messageConsum.consume();
+			if(data.getData().equals("Connection")){
+				MessageConsume messageConsum=new MessageConsume();
+				Global.map.put(data.getMac()+"_channel",ctx);
+				RedisOperating op=new RedisOperating();
+				op.set(data.getMac()+"_channel",Integer.toString(ctx.hashCode()));
+				messageConsum.setMac(data.getMac()+"_channel");
+				messageConsum.consume();
+				CreateDockerRunable dockerRunable=new CreateDockerRunable();
+				dockerRunable.setData(data);
+				WorkThreadPool.doWork(dockerRunable);
+			}else if (data.getData().contains("input:")){
+				String [] input=data.getData().split("[:]");
+				String path="/home/jingbao/桌面/"+data.getMac()+"/jingbao_temp";
+				FileUtils.write(path,input[1]+"\n");
+				path="/home/"+data.getMac()+"_input.py";
+				Status status=Run.inputRun(path,data);
+				TextWebSocketFrame tws = new TextWebSocketFrame(new Gson().toJson(status));
+				ctx.channel().write(tws);
+				ctx.channel().flush();
+			}
 		}
-//		Data data=new Gson().fromJson(request, Data.class);
-//		Global.map.put(data.getMac()+"_channel",ctx);
-//		System.out.println(Global.map.get(data.getMac()+"_channel"));
-//		WorkRunable run=new WorkRunable();
-//		run.setCtx(ctx);
-//		run.setResult(request);
-//		WorkThreadPool.doWork(run);
-
-//		System.out.println("---------------------------------------------end");
-
-//		ctx.channel().write(tws);
-//		ctx.channel().flush();
-//		Data data=new Gson().fromJson(request, Data.class);
-//		Status s= SaveProject.saveProject(data);
-//		Status s= new Status();
-//		s.setStatus("XXXX");
-//		TimeUnit.SECONDS.sleep(5);
-//		TextWebSocketFrame x = new TextWebSocketFrame(new Gson().toJson(s));
-//		ctx.channel().writeAndFlush(x);
-//		Global.group.writeAndFlush(x);
-//		// 群发
-//		Global.group.writeAndFlush(tws);
-////
-		// 返回【谁发的发给谁】
-//		 ctx.channel().writeAndFlush(tws);
-//		Context context=new Context();
-//		context.setCtx(ctx);
-//		context.setData(request);
-//		MessageProduct.direct(new Gson().toJson(context));
-
 	}
 
 	private void handleHttpRequest(ChannelHandlerContext ctx,
@@ -228,5 +207,17 @@ public class MyWebSocketServerHandler extends
 		ctx.close();
 
 	}
+
+
+//	private static Status run(Data data){
+//		String path="/home/"+data.getMac()+"_input.py";
+//		String sh="docker exec "+data.getDockerId()+" python3.7 "+path;
+//		try {
+//			Process pro = Runtime.getRuntime().exec(sh);
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+//
+//	}
 
 }

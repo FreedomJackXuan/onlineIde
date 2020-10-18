@@ -1,19 +1,15 @@
 package contrual;
 
-import Server.WorkThreadPool;
-import com.aliyun.oss.OSSClient;
-import com.aliyun.oss.model.GetObjectRequest;
 import com.google.gson.Gson;
+import org.apache.log4j.Logger;
 import pojo.Data;
 import pojo.DockerFile;
 import pojo.Status;
 import utils.OssUtil;
 import utils.RedisOperating;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 
 import static contrual.StartDocker.createDocker;
 
@@ -21,10 +17,11 @@ import static contrual.StartDocker.createDocker;
  * Created by jingbao on 18-11-6.
  */
 public class SaveProject {
+    private static Logger log = Logger.getLogger(SaveProject.class);
     public SaveProject(){}
     public static Status doSave(Data data) throws IOException,
             InterruptedException {
-        System.out.println(new Gson().toJson(data));
+//        System.out.println(new Gson().toJson(data));
         Status status=null;
         String dcokerFile=data.getData();
         DockerFile[] list=new Gson().fromJson(dcokerFile,DockerFile[]
@@ -36,13 +33,13 @@ public class SaveProject {
             for (int i=0;i<list.length;i++) {
                 filesList[i]=list[i].getFileUrl();
             }
-//            RedisOperating op=new RedisOperating();
+            RedisOperating op=new RedisOperating();
 //            if (op.exists(data.getMac())){
 //            }else {
 //                createDocker(data);
 //            }
             for (String str:filesList) {
-                status=save("/home/jingbao/桌面/"+data.getMac()+str,"");
+                status=save("/home/jingbao/桌面/"+data.getMac()+"/"+str,"");
             }
             OssUtil.load(filesList,data.getMac());
         }
